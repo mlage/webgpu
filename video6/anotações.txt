@@ -1,0 +1,9 @@
+webGPU possui 5 primitivas:
+
+point-list (desenha os pontos)
+line-list (equivale ao gl_lines)
+line-strip (equivale ao gl_line_strip)
+triangle-list (equivale ao gl_triangles)
+triangle-strip (equivala ao gl_triangle_strip)
+
+line-strip e triangle-strip precisam ter o formato de índice uint32

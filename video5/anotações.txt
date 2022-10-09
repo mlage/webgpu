@@ -1,0 +1,7 @@
+webGPU possui 5 primitivas:
+
+point-list (desenha os pontos)
+line-list (cada 2 pontos são uma linha)
+line-strip (cada novo ponto é ligado ao ponto anterior)
+triangle-list ()
+triangle-strip
