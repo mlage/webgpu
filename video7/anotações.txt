@@ -1,0 +1,27 @@
+Sobre Buffers:
+
+1. mappedAtCreation libera o acesso a CPU ao buffer
+ Quando usamos getMappedRange(), damos a CPU o acesso a um trecho do buffer.
+ Nesse momento, a GPU não pode acessar esse trecho. Para devolver o acesso, usamos o método unmap()
+
+2. O atributo arrayStride do descriptor do buffer, na hora de setar o pipeline, indica o tamanho,
+em bytes, ta informação de um vértice no buffer. Por exemplo, no shader de vértice, passamos apenas o
+x e o y, daí o formato usado e float32x2, ou seja, cada vértice corresponde a dois floats, e daí o arrayStride
+é 8.
+
+3. Tanto o buffer de cores quanto o de vértices é tido como um vertexBuffer, para os distinguir, apenas
+indicamos a sua localização. No nosso código, o arrayBuffer está na location 0, e o colorBuffer está na
+location 1.
+
+4. Ao usar a função setVertexBuffer, indicamos essa posição, e Float32Array que criamos para ser o respectivo
+buffer.
+
+5. a location de onde pegamos os vértices e as cores no shader, é a mesma dos seus respectivos buffers. ou
+seja, o vértice de posição é declarado do @location(0), por exemplo.
+
+6. Passamos um vec2 pra cada vértice, de certa forma. Mas criamos a variável position como um vec4. Devido
+as configurações citadas no ponto 2, o webGPU entende que o valor de cada vértice é dado por dois floats, e 
+daí quando criamos um vec4, o webGPU faz a conversão de tipo, colocando na coordenada z=0 por padrão, e a
+coordenada homogênea como 1. O mesmo ocorre com a informação de cor, porém ela é um vec3, então é setado
+1 para a.
+
