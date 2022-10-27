@@ -1,0 +1,5 @@
+Mudanças no código:
+  o buffer de vértice não tem mais vértices repetidos, e foi criado
+um buffer de índices.
+  É setado o buffer de índices, e então o método drawIndexed é chamado,
+ao invés do draw

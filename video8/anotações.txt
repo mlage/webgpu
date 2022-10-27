@@ -1,0 +1,32 @@
+Mudanças no código:
+    Foi usado um único buffer para cores e vértices, assim:
+
+1. Na hora de definir os buffers do estágio de vértice, foi
+criado um único buffer. Definimos o arrayStride como 4*(2+3),
+sendo 4 o tamanho do float em bytes, 2 a quantidade de floats
+que vão para o vértice, e 3 sendo a quantidade de floats para
+as cores. Ou seja, cada 5 floats vão para uma execução do shader
+sendo que 2 são as coordenadas x e y do vértice, e os 3 são o RGB
+das cor.
+
+2. O vetor de atributes é onde decidimos dos 5 floats, quais vão
+para que lugar. Definimos:
+
+  a) um atributo para a location 0, com o
+formato float32x2, e offset 0. Ou seja, desses 5 valores, os dois
+primeiros vão para a location 0 (que vai ser usada para coordenadas
+de vértice). 
+
+  b) um atributo para a location 1, com o formato float32x3, e offset 8.
+O offset é dado em bytes, então 2 floats serão pulados, e consequentemente
+os 3 últimos serão destinados a location 1 (para serem usados como informação
+de cor).
+
+3. Agora no renderPass passamos um único buffer: 
+ 
+    renderPass.setVertexBuffer(0, vertexBuffer);
+
+Passando a location e o array.
+
+Como a maneira que os dados do buffer vão ser gerenciados já foi definida
+na descrição do pipeline, acredito que essa location não interfira.
