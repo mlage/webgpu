@@ -69,6 +69,8 @@ const create3DObject=async()=>{
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
     })
 
+    console.log(pipeline.getBindGroupLayout(0))
+
     const uniformBindingGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
         entries: [
