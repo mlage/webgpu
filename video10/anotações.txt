@@ -45,7 +45,7 @@ Mudanças no código:
     Primeiro definimos a textura como a textura criada. Definimos também a load operation. Existem as 
   opções "clear" e "load". Clear vai setar inicialmente todos os valores para o depth test com um 
   determinado clear value, definido em depthClearValue. load irá carregar os valores antes armazenados
-  na textura.
+  na textura. Foi usada a operação de clear, e o clear value 1.0
 
     Definimos então a store operation. Existem duas opções, "discard" e "store", que vai indicar 
   se o render pipeline vai registrar ou não os valores de depth depois do teste na textura. 
@@ -62,3 +62,7 @@ Mudanças no código:
 
   aqui indicamos o grupo usado, definido como dito acima, e então, deste grupo, o binding que setamos nosso
   buffer.
+
+
+  OBS: vale exclarecer que, dado que o clear value é 1.0, e a função de comparação é less, passam no teste
+  os que tem a profundidade menor que 1.
