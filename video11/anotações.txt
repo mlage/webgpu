@@ -1,0 +1,14 @@
+Mudanças no código:
+
+1. Importada a biblioteca 3d-view-controls, que permite que os parêmetros da camera
+sejam manipulados pelo mouse. Ela retorna a viewMatrix.
+
+2. foi criada a função createAnimation que recebe uma função de desenho, um vetor
+de rotação e um parametro que indica se é uma animação. Então a função usa o
+requestAnimationFrame para executar a função de desenho como uma animação. Se o isAnimation
+for true, ele incrementa todas as coordenadas do vetor de rotação.
+
+2. A função principal possui um parâmetro isAnimation. E existe uma função draw, que
+executa todo o código de desenho, e se isAnimation for false, ela recebe a viewMatrix
+da camera criada pelo 3d-view-controls e atualiza a viewProjection. A função draw, um
+vetor de rotação e um parametro isAnimation são passados como argumentos da createAnimation
