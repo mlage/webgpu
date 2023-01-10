@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vídeo 12-OO</title>
+</head>
+<body>
+    <div>
+        <h1>Cubo com distintas cores de vértices:</h1><br>
+        <div class="btn-group btn-group-toggle" id="id-radio" data-toggle="buttons">
+            <label class="btn btn-secondary active ml-3">
+                <input type="radio" name="options" value="animation" checked>Animação
+            </label>
+            <label class="btn btn-secondary ml-2">
+                <input type="radio" name="options" value="camera">Controle de Camera
+            </label>
+        </div>
+
+        <canvas id="canvas-webgpu" width="640" height="640"></canvas>
+    </div>
+
+    <script src="main.bundle.js"></script>
+</body>
+</html>
