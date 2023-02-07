@@ -1,5 +1,5 @@
 import { mat4, vec3 } from "gl-matrix"
-import Pipeline from "./Pipeline";
+import Pipeline from "./pipeline";
  
 export default class Mesh{
     private vertex: Float32Array;

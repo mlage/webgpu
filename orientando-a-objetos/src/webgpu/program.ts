@@ -1,7 +1,7 @@
 import { mat4 } from "gl-matrix";
 import Camera from "./camera";
 import Mesh from "./mesh";
-import Pipeline from "./Pipeline";
+import Pipeline from "./pipeline";
 
 export default class Program{
     private mesh?: Mesh;

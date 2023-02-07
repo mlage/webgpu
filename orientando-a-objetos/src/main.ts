@@ -3,7 +3,7 @@ import { Shaders } from "./shader";
 import { CubeData } from "./vertex_data";
 import Camera from "./webgpu/camera";
 import Mesh from "./webgpu/mesh";
-import Pipeline from "./webgpu/Pipeline";
+import Pipeline from "./webgpu/pipeline";
 import Program from "./webgpu/program";
 
 export default class Main{
