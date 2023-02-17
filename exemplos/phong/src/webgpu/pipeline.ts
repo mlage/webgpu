@@ -18,7 +18,7 @@ export default class Pipeline{
 
     constructor(device: GPUDevice, vertShader: string, fragShader: string, primitive:string){
         let indexFormat=undefined;
-        if(primitive==="line-strip") indexFormat="uint32";
+        if(primitive==="line-strip" || primitive === "triangle-strip") indexFormat="uint32";
 
         this.pipelineDescriptor = {
             vertex:{
@@ -26,21 +26,30 @@ export default class Pipeline{
                     code:vertShader
                 }),
                 entryPoint:"main",
-                buffers:[
+                buffers: [
                     {
-                        arrayStride:12,
-                        attributes:[{
-                            shaderLocation:0,
-                            format:"float32x3",
-                            offset:0
-                        },]
+                        arrayStride: 24,
+                        attributes:[
+                            {
+                                shaderLocation: 0,
+                                format: "float32x3",
+                                offset: 0
+                            },
+                            {
+                                shaderLocation: 1,
+                                format: "float32x3",
+                                offset: 12
+                            }
+                        ]
                     },{
-                        arrayStride:12,
-                        attributes:[{
-                            shaderLocation:1,
-                            format:"float32x3",
-                            offset:0
-                        },] 
+                        arrayStride: 16,
+                        attributes:[
+                            {
+                                shaderLocation: 2,
+                                format: "float32x4",
+                                offset: 0
+                            }
+                        ]
                     }
                 ]
             },
@@ -75,6 +84,11 @@ export default class Pipeline{
         }
             
         this.device = device;
+    }
+
+    setLayout(layout: GPUPipelineLayout){
+        this.changed = true;
+        this.pipelineDescriptor.layout = layout;
     }
 
     public addVertexBuffer(...atributes: Atribute[]){

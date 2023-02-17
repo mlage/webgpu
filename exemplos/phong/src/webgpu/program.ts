@@ -1,5 +1,6 @@
 import { mat4 } from "gl-matrix";
-import Camera from "./camera";
+import Camera from "../camera";
+import IndexedMesh from "./indexed_mesh";
 import Mesh from "./mesh";
 import Pipeline from "./pipeline";
 
@@ -8,11 +9,11 @@ export default class Program{
     private pipeline: Pipeline;
 
     private bindGroups: Map<number, GPUBindGroup> = new Map();
-    private entries: Map<number, Map<number, GPUBindGroupEntry> > = new Map();
+    private bindGroupEntries: Map<number, Map<number, GPUBindGroupEntry> > = new Map();
+    private layoutEntries: Map<number, Map<number, GPUBindGroupLayoutEntry> > = new Map();
     private uniforms: Uniform[] = [];
+    private bindGroupLayouts: Map<number, GPUBindGroupLayout> = new Map();
 
-    private mvp_binding?: number;
-    private mvp_group?: number;
     private using_mvp: boolean = false;
     private mvpUniformBuffer?: GPUBuffer;
 
@@ -29,10 +30,9 @@ export default class Program{
         this.device = device;
     }
 
-    useMVPMatrix(binding: number, group: number){
+    //talvez seja apagado
+    /*useMVPMatrix(binding: number, group: number){
         this.using_mvp = true;
-        this.mvp_binding = binding;
-        this.mvp_group = group;
 
         this.mvpUniformBuffer = this.device.createBuffer({
             size:64,
@@ -48,21 +48,21 @@ export default class Program{
             }
         }
 
-        if(!this.entries.get(group)) this.entries.set(group, new Map());
+        if(!this.bindGroupEntries.get(group)) this.bindGroupEntries.set(group, new Map());
 
-        this.entries.get(group)!.set(binding, entry);
+        this.bindGroupEntries.get(group)!.set(binding, entry);
 
-        const uniformBindingGroup = this.device.createBindGroup({
+        const uniformBindGroup = this.device.createBindGroup({
             layout: this.pipeline.renderPipeline!.getBindGroupLayout(group),
-            entries: this.entries.get(group)?.values() as Iterable<GPUBindGroupEntry>
+            entries: this.bindGroupEntries.get(group)?.values() as Iterable<GPUBindGroupEntry>
         })
 
-        this.bindGroups.set(group, uniformBindingGroup);
+        this.bindGroups.set(group, uniformBindGroup);
         console.log(this.bindGroups);
-    }
+    }*/
 
     appendUniformBuffer(binding: number, group: number, ...data: Float32Array[]){
-        if(data.length = 0) throw new Error("The data can't be undefined.");
+        if(data.length === 0) throw new Error("The data can't be undefined.");
 
         let size = 0;
 
@@ -72,10 +72,29 @@ export default class Program{
 
         size*=4;
 
+        //criando buffer
         const uniformBuffer = this.device.createBuffer({
             size,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         })
+
+        //criando layout do bind group
+
+        const layoutEntry = {
+            binding,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: {}
+        } as GPUBindGroupLayoutEntry;
+
+        if(!this.layoutEntries.get(group)) this.layoutEntries.set(group, new Map());
+
+        this.layoutEntries.get(group)!.set(binding, layoutEntry);
+
+        const bindGroupLayout = this.device.createBindGroupLayout({
+            entries: this.layoutEntries.get(group)!.values() as Iterable<GPUBindGroupLayoutEntry>
+        })
+
+        //criando bind group
 
         const entry = {
             binding: binding,
@@ -86,16 +105,24 @@ export default class Program{
             }
         }
 
-        if(!this.entries.get(group)) this.entries.set(group, new Map());
+        if(!this.bindGroupEntries.get(group)) this.bindGroupEntries.set(group, new Map());
 
-        this.entries.get(group)!.set(binding, entry);
+        this.bindGroupEntries.get(group)!.set(binding, entry);
 
-        const uniformBindingGroup = this.device.createBindGroup({
-            layout: this.pipeline.renderPipeline!.getBindGroupLayout(group),
-            entries: this.entries.get(group)?.values() as Iterable<GPUBindGroupEntry>
+        const uniformBindGroup = this.device.createBindGroup({
+            layout: bindGroupLayout,
+            entries: this.bindGroupEntries.get(group)!.values() as Iterable<GPUBindGroupEntry>
         })
 
-        this.bindGroups.set(group, uniformBindingGroup);
+        this.bindGroups.set(group, uniformBindGroup);
+
+        this.uniforms.push(new Uniform(uniformBuffer, data));
+
+        this.bindGroupLayouts.set(group, bindGroupLayout);
+
+        this.pipeline.setLayout(this.device.createPipelineLayout({
+            bindGroupLayouts: this.bindGroupLayouts.values()
+        }))
     }
 
     private setBindGroups(renderPass: GPURenderPassEncoder){
@@ -157,6 +184,7 @@ export default class Program{
             const mvpMatrix = mat4.create();
     
             mat4.multiply(mvpMatrix, vpMatrix, modelMatrix);
+            console.log(mvpMatrix as ArrayBuffer, new Float32Array(mvpMatrix));
             this.device.queue.writeBuffer(this.mvpUniformBuffer!, 0, mvpMatrix as ArrayBuffer);
         }
 
@@ -170,7 +198,13 @@ export default class Program{
         if(this.mesh) this.mesh.setBuffers(renderPass);
         
         this.setBindGroups(renderPass);
-        renderPass.draw(this.mesh!.numberOfVertex || n_vertex!);
+        
+        if(this.mesh instanceof IndexedMesh){
+            renderPass.drawIndexed(this.mesh!.numberOfVertex || n_vertex!);
+        }else{
+            renderPass.draw(this.mesh!.numberOfVertex || n_vertex!);
+        }
+
         renderPass.end();
 
         this.device.queue.submit([commandEncoder.finish()]);

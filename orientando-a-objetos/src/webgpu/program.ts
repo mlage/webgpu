@@ -11,8 +11,6 @@ export default class Program{
     private entries: Map<number, Map<number, GPUBindGroupEntry> > = new Map();
     private uniforms: Uniform[] = [];
 
-    private mvp_binding?: number;
-    private mvp_group?: number;
     private using_mvp: boolean = false;
     private mvpUniformBuffer?: GPUBuffer;
 
@@ -31,8 +29,6 @@ export default class Program{
 
     useMVPMatrix(binding: number, group: number){
         this.using_mvp = true;
-        this.mvp_binding = binding;
-        this.mvp_group = group;
 
         this.mvpUniformBuffer = this.device.createBuffer({
             size:64,

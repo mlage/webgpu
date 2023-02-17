@@ -1,8 +1,8 @@
 import { mat4, vec3 } from "gl-matrix";
 
 export default class Camera{
-    private viewMatrix: mat4 = mat4.create();
-    private projMatrix: mat4 = mat4.create();
+    private view_matrix: mat4 = mat4.create();
+    private proj_matrix: mat4 = mat4.create();
     private viewProjMatrix: mat4 = mat4.create();
 
     camPosition: vec3 = [0,0,1];
@@ -13,8 +13,8 @@ export default class Camera{
     right:number = 4.0;
     bottom:number = -4.0;
     top:number = 4.0;
-    near:number = 0.1;
-    far:number = 8.0;
+    near:number = 1;
+    far:number = 9.0;
 
     fovy:number = Math.PI/2;
     aspect:number;
@@ -32,24 +32,34 @@ export default class Camera{
         this.typeOfProjection = type;
     }
 
+    public get viewMatrix(){
+        this.updateViewMatrix();
+        return this.view_matrix;
+    }
+
+    public get projMatrix(){
+        this.updateProjMatrix();
+        return this.proj_matrix;
+    }
+
     private updateViewMatrix(){
-        mat4.identity(this.viewMatrix);
-        mat4.lookAt(this.viewMatrix, this.camPosition, this.lookDirection, this.upDirection);
+        mat4.identity(this.view_matrix);
+        mat4.lookAt(this.view_matrix, this.camPosition, this.lookDirection, this.upDirection);
     }
 
     private updateProjMatrix(){
-        mat4.identity(this.projMatrix);
+        mat4.identity(this.proj_matrix);
         if(this.typeOfProjection == "perspective")
-            mat4.perspective(this.projMatrix, this.fovy, this.aspect, this.near, this.far);
+            mat4.perspective(this.proj_matrix, this.fovy, this.aspect, this.near, this.far);
         else
-            mat4.ortho(this.projMatrix, this.left * 1024/768, this.right * 1024/768, this.bottom, this.top, this.near, this.far);
+            mat4.ortho(this.proj_matrix, this.left * 1024/768, this.right * 1024/768, this.bottom, this.top, this.near, this.far);
     }
 
     getViewProjection(){
         this.updateViewMatrix();
         this.updateProjMatrix();
         mat4.identity(this.viewProjMatrix);
-        mat4.multiply(this.viewProjMatrix, this.projMatrix, this.viewMatrix);
+        mat4.multiply(this.viewProjMatrix, this.proj_matrix, this.view_matrix);
 
         return this.viewProjMatrix;
     }

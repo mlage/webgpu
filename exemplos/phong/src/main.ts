@@ -1,8 +1,8 @@
-import Scene from "./scene";
+import Light from "./light";
 import { Shaders } from "./shader";
-import { CubeData } from "./vertex_data";
-import Camera from "./webgpu/camera";
-import Mesh from "./webgpu/mesh";
+import Sphere from "./sphere";
+import Camera from "./camera";
+import IndexedMesh from "./webgpu/indexed_mesh";
 import Pipeline from "./webgpu/pipeline";
 import Program from "./webgpu/program";
 
@@ -11,12 +11,9 @@ export default class Main{
     canvas?: HTMLCanvasElement;
     context?: GPUCanvasContext;
     depthTexture?: GPUTexture;
-    scene?: Scene;
-    isAnimation: boolean = true;
 
     async init(){
         await this.initGPU();
-
 
         this.depthTexture=this.device!.createTexture({
             format: "depth24plus",
@@ -44,7 +41,7 @@ export default class Main{
         this.canvas.width = 1024 * devicePixelRatio;
         this.canvas.height = 768 * devicePixelRatio;
     
-        const adapter = await navigator.gpu?.requestAdapter() as GPUAdapter;
+        const adapter = await navigator.gpu?.requestAdapter({powerPreference: "high-performance"}) as GPUAdapter;
         this.device = await adapter?.requestDevice() as GPUDevice;
         this.context = this.canvas.getContext("webgpu") as unknown as GPUCanvasContext;
     
@@ -65,31 +62,57 @@ export default class Main{
 }
 
 Main.build().then((main)=>{
-    const cubeData = CubeData();
+    const data = new Sphere(1, [0,0,0]);
 
-    const cube = new Mesh(main.device!, 3, new Float32Array(cubeData.positions), 0, 
-        new Float32Array(cubeData.colors), 1);
+    const sphere = new IndexedMesh(main.device!, data.indexes!, 6, data.vertices!, 0);
+    sphere.scale = [2, 2, 2];
     const shaders = Shaders();
 
     const pipeline = new Pipeline(main.device!, shaders.vertex, shaders.fragment, "triangle-list");
 
-    const camera = new Camera(main.canvas!);
-    camera.projectionType = "orthogonal";
-    camera.camPosition = [2, 2, -6];
+    const light = new Light([2, 2, -1, 1]);
 
-    const program = new Program(main.device!, pipeline, cube);
-    program.useMVPMatrix(0, 0);
+    const camera = new Camera(main.canvas!);
+    camera.camPosition = [0, 0, 4];
+
+    const program = new Program(main.device!, pipeline, sphere);
+
+    program.appendUniformBuffer(0, 0, 
+        new Float32Array(sphere.modelMatrix), 
+        new Float32Array(camera.viewMatrix),
+        new Float32Array(camera.projMatrix)
+    );
+
+    light.createUniformBuffer(program, 0, 1);
 
     program.draw(camera, main.context!, main.depthTexture);
 
     document.addEventListener("keypress", e=>{
-        if (e.key == "p") {
-            camera.projectionType = "perspective";
-            program.draw(camera, main.context!, main.depthTexture);
-        } else if (e.key == "o") {
-            camera.projectionType = "orthogonal";
+        if(e.key === "p" || e.key === "o"){
+            program.appendUniformBuffer(0, 0, 
+                new Float32Array(sphere.modelMatrix), 
+                new Float32Array(camera.viewMatrix),
+                new Float32Array(camera.projMatrix)
+            );
+
+            if (e.key == "p") camera.projectionType = "perspective";
+            else camera.projectionType = "orthogonal";
+
             program.draw(camera, main.context!, main.depthTexture);
         }
     })
+
+    let param = 0;
+
+    const draw = ()=>{
+        light.newPos(param);
+        light.createUniformBuffer(program, 0, 1);
+        program.draw(camera, main.context!, main.depthTexture);
+        param+=0.01;
+        requestAnimationFrame(draw);
+    }
+
+    requestAnimationFrame(draw);
 })
+
 

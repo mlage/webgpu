@@ -2,7 +2,7 @@ import { mat4, vec3 } from "gl-matrix"
 import Pipeline from "./pipeline";
  
 export default class Mesh{
-    private vertex: Float32Array;
+    protected vertex: Float32Array;
     private vertexBuffer: GPUBuffer;
 
     private colors?: Float32Array;
@@ -16,7 +16,7 @@ export default class Mesh{
     rotationAngles: vec3 = vec3.fromValues(0,0,0);
     private model_matrix: mat4;
 
-    private n_vertex: number;
+    protected stride: number;
 
     public get modelMatrix(){
         this.createTransforms();
@@ -24,7 +24,7 @@ export default class Mesh{
     }
 
     public get numberOfVertex(){
-        return this.n_vertex;
+        return this.vertex.length/this.stride;
     }
 
     constructor(device: GPUDevice, stride: number = 3, vertex: Float32Array, vertexPos: number, colors?:Float32Array, colorsPos?: number){
@@ -43,7 +43,7 @@ export default class Mesh{
         
         this.model_matrix = mat4.create();
 
-        this.n_vertex = vertex.length/stride;
+        this.stride = stride;
     }
 
     private createTransforms(){
