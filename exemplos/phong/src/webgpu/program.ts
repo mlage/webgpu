@@ -66,11 +66,20 @@ export default class Program{
 
         let size = 0;
 
+        const max = maxLength(data);
+        let blocks = 1;
+        let floats = 0;
+
         for(const fArray of data){
-            size += fArray.length;
+            if(floats + fArray.length > max){
+                blocks++;
+                floats = 0;
+            }
+
+            floats += fArray.length;
         }
 
-        size*=4;
+        size = blocks * max * 4;
 
         //criando buffer
         const uniformBuffer = this.device.createBuffer({
@@ -116,7 +125,7 @@ export default class Program{
 
         this.bindGroups.set(group, uniformBindGroup);
 
-        this.uniforms.push(new Uniform(uniformBuffer, data));
+        this.uniforms.push(new Uniform(uniformBuffer, data, max));
 
         this.bindGroupLayouts.set(group, bindGroupLayout);
 
@@ -134,11 +143,32 @@ export default class Program{
     private writeUniforms(){
         for(const uniform of this.uniforms){
             let offset = 0;
+            let blockLen = 0;
+            let block = 0;
+
             for(const data of uniform.information){
+                if(blockLen + data.length > uniform.max){
+                    block++;
+                    blockLen = 0;
+                    offset = block * uniform.max * 4;
+                }
+
                 this.device.queue.writeBuffer(uniform.buffer, offset, data as ArrayBuffer);
 
+                blockLen += data.length;
                 offset += data.length*4;
             }
+
+            /*
+        for(const fArray of data){
+            if(floats + fArray.length > max){
+                blocks++;
+                floats = 0;
+            }
+
+            floats += fArray.length;
+        }
+            */
         }
     }
 
@@ -214,9 +244,21 @@ export default class Program{
 class Uniform{
     buffer: GPUBuffer;
     information: Float32Array[];
+    max: number;
 
-    constructor(buffer: GPUBuffer, info: Float32Array[]){
+    constructor(buffer: GPUBuffer, info: Float32Array[], max: number){
         this.buffer = buffer;
         this.information = info;
+        this.max = max;
     }
+}
+
+function maxLength(data: Float32Array[]){
+    let max = 0;
+
+    for(let array of data){
+        if(array.length>max) max = array.length;
+    }
+
+    return max;
 }

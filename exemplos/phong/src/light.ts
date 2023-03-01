@@ -1,16 +1,16 @@
-import { vec3, vec4 } from "gl-matrix";
+import { vec4 } from "gl-matrix";
 import Program from "./webgpu/program";
 
 export default class Light{
-    ambColor: vec4 = vec4.fromValues(0.2, 0.2, 0.2, 1);
+    ambColor: vec4 = vec4.fromValues(0.0, 0.0, 0.0, 1);
     ambK: number = 2.0;
 
-    difColor: vec4 = vec4.fromValues(0, 0.2, 0.5, 1);
+    difColor: vec4 = vec4.fromValues(0.3, 0.3, 0.3, 1);
     difK: number = 7.0;
 
-    espColor: vec4 = vec4.fromValues(1, 0, 1, 1);
-    espK: number = 2.0;
-    espExp: number = 3.0;
+    espColor: vec4 = vec4.fromValues(1.0, 1.0, 1.0, 1);
+    espK: number = 1.0;
+    espExp: number = 20.0;
 
     pos: vec4;
 
@@ -23,7 +23,7 @@ export default class Light{
             new Float32Array(this.ambColor),
             new Float32Array(this.difColor),
             new Float32Array(this.espColor),
-            new Float32Array(this.pos),
+            new Float32Array(this.pos),            
             new Float32Array([this.ambK]),
             new Float32Array([this.difK]),
             new Float32Array([this.espK]),

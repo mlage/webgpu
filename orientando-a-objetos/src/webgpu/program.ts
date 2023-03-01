@@ -1,5 +1,5 @@
 import { mat4 } from "gl-matrix";
-import Camera from "./camera";
+import Camera from "../camera";
 import Mesh from "./mesh";
 import Pipeline from "./pipeline";
 

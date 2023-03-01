@@ -6,49 +6,48 @@ export default class IndexedMesh extends Mesh{
     private indexes: Uint32Array;
     private indexBuffer: GPUBuffer;
 
-    private normals?: Float32Array;
-    private normalsBuffer?: GPUBuffer;
-
     get numberOfVertex(){
         return this.indexes.length;
     }
 
-    constructor(device: GPUDevice, indexes:Uint32Array, stride: number = 3, vertex: Float32Array, vertexPos: number, colors?:Float32Array, colorsPos?: number){
-        super(device, stride, vertex, vertexPos, colors, colorsPos);
+    constructor(device: GPUDevice, indexes:Uint32Array, stride: number = 3){
+        super(device, stride);
 
         this.indexes = indexes;
 
         this.indexBuffer = Pipeline.createGPUBufferUint(device, indexes);
-
-        this.calculateNormals();
-
-        this.normalsBuffer = Pipeline.createGPUBuffer(device, this.normals!);
     }
 
-    private calculateNormals(){
-        const normals = new Array(this.vertex.length / this.stride * 4).fill(0);
+    setBuffers(renderPass: GPURenderPassEncoder){
+        super.setBuffers(renderPass);
 
-        for(let i = 0; i<this.indexes.length; i+=3){
-            const tI1 = this.indexes[i];
-            const tI2 = this.indexes[i+1];
-            const tI3 = this.indexes[i+2];
+        renderPass.setIndexBuffer(this.indexBuffer, "uint32");
+    }
+
+    static calculateNormals(indexes: Uint32Array, vertices:Float32Array, vertLen: number = 3, offset: number = 0){
+        const normals = new Array(vertices.length / vertLen * 4).fill(0);
+
+        for(let i = 0; i<indexes.length; i+=3){
+            const tI1 = indexes[i];
+            const tI2 = indexes[i+1];
+            const tI3 = indexes[i+2];
 
             const p1 = vec3.fromValues(
-                this.vertex[tI1*this.stride],
-                this.vertex[tI1*this.stride+1],
-                this.vertex[tI1*this.stride+2]
+                vertices[tI1*vertLen + offset ],
+                vertices[tI1*vertLen + offset +1],
+                vertices[tI1*vertLen + offset +2]
             );
 
             const p2 = vec3.fromValues(
-                this.vertex[tI2*this.stride],
-                this.vertex[tI2*this.stride+1],
-                this.vertex[tI2*this.stride+2]
+                vertices[tI2*vertLen + offset ],
+                vertices[tI2*vertLen + offset +1],
+                vertices[tI2*vertLen + offset +2]
             );
 
             const p3 = vec3.fromValues(
-                this.vertex[tI3*this.stride],
-                this.vertex[tI3*this.stride+1],
-                this.vertex[tI3*this.stride+2]
+                vertices[tI3*vertLen + offset ],
+                vertices[tI3*vertLen + offset +1],
+                vertices[tI3*vertLen + offset +2]
             );
 
             const normal = crossProduct(
@@ -68,15 +67,7 @@ export default class IndexedMesh extends Mesh{
             normals[tI3*4 + 1] += normal[1];
             normals[tI3*4 + 2] += normal[2];
         }
-        this.normals = new Float32Array(normals);
-    }
-
-    setBuffers(renderPass: GPURenderPassEncoder){
-        super.setBuffers(renderPass);
-
-        renderPass.setIndexBuffer(this.indexBuffer, "uint32");
-
-        renderPass.setVertexBuffer(1, this.normalsBuffer!);
+        return new Float32Array(normals);
     }
 }
 

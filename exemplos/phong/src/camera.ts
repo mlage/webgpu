@@ -13,7 +13,7 @@ export default class Camera{
     right:number = 4.0;
     bottom:number = -4.0;
     top:number = 4.0;
-    near:number = 1;
+    near:number = 1.0;
     far:number = 9.0;
 
     fovy:number = Math.PI/2;
@@ -52,7 +52,7 @@ export default class Camera{
         if(this.typeOfProjection == "perspective")
             mat4.perspective(this.proj_matrix, this.fovy, this.aspect, this.near, this.far);
         else
-            mat4.ortho(this.proj_matrix, this.left * 1024/768, this.right * 1024/768, this.bottom, this.top, this.near, this.far);
+            mat4.ortho(this.proj_matrix, this.left * 1024/768, this.right * 1024/768, this.bottom, this.top, this.left, this.right);
     }
 
     getViewProjection(){

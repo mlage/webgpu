@@ -1,7 +1,7 @@
 import Scene from "./scene";
 import { Shaders } from "./shader";
 import { CubeData } from "./vertex_data";
-import Camera from "./webgpu/camera";
+import Camera from "./camera";
 import Mesh from "./webgpu/mesh";
 import Pipeline from "./webgpu/pipeline";
 import Program from "./webgpu/program";

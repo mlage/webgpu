@@ -18,7 +18,7 @@ export default class Sphere{
         this.radius = radius;
         this.center = center;
 
-        this.generateData(30, 30);
+        this.generateData(200, 200);
     }
 
     private generateData(u: number, v: number){
@@ -31,7 +31,7 @@ export default class Sphere{
         for(let i=0; i<u; i++){
             for(let j=0; j<v; j++){
                 pt = this.getPoint(i*180/(u-1), j*360/(v-1));
-                pt = [...pt, 0, 0, 1];
+                pt = [...pt, 0.0, 0.0, 0.0];
                 pts.push(pt);
             }
         }

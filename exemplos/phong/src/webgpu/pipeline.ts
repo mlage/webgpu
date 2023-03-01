@@ -26,32 +26,7 @@ export default class Pipeline{
                     code:vertShader
                 }),
                 entryPoint:"main",
-                buffers: [
-                    {
-                        arrayStride: 24,
-                        attributes:[
-                            {
-                                shaderLocation: 0,
-                                format: "float32x3",
-                                offset: 0
-                            },
-                            {
-                                shaderLocation: 1,
-                                format: "float32x3",
-                                offset: 12
-                            }
-                        ]
-                    },{
-                        arrayStride: 16,
-                        attributes:[
-                            {
-                                shaderLocation: 2,
-                                format: "float32x4",
-                                offset: 0
-                            }
-                        ]
-                    }
-                ]
+                buffers: this.buffers
             },
             fragment:{
                 module:device.createShaderModule({
@@ -68,22 +43,22 @@ export default class Pipeline{
             },
             layout:'auto'
         };
+            
+        this.device = device;
+    }
 
+    enableDepthTest(){
         const depthStencil = {
             format:"depth24plus",
             depthWriteEnabled:true,
             depthCompare:"less"
         } as GPUDepthStencilState;
 
-        if(primitive !== "point-list" && primitive !== "line-list"
-        && primitive !== "line-strip"){
 
-            this.pipelineDescriptor.depthStencil = depthStencil
-            this._depth = true;
+        this.pipelineDescriptor.depthStencil = depthStencil
+        this._depth = true;
 
-        }
-            
-        this.device = device;
+        this.changed = true;
     }
 
     setLayout(layout: GPUPipelineLayout){
@@ -94,12 +69,30 @@ export default class Pipeline{
     public addVertexBuffer(...atributes: Atribute[]){
         this.changed = true;
         const buffer = {} as GPUVertexBufferLayout;
+        const atribs: GPUVertexAttribute[] = [];
+
+        let stride = 0;
 
         for(const atribute of atributes){
+            atribs.push({
+                shaderLocation: atribute.location,
+                format: atribute.format || "float32x3",
+                offset: stride
+            })
 
-            const size = atribute.format
+            stride+=this.stride(atribute.format || "float32x3");
         }
         
+        buffer.arrayStride = stride;
+        buffer.attributes = atribs;
+
+        this.buffers.push(buffer);
+    }
+
+    private stride(format: GPUVertexFormat){
+        if(format.includes("x")) return Number(format.slice(-4, -2))*Number(format[format.length-1]) / 8;
+        
+        return Number(format.slice(-2)) / 8;
     }
 
     public get renderPipeline(){
@@ -138,10 +131,10 @@ export default class Pipeline{
 }
 
 class Atribute{
-    location?: number;
-    format: string;
+    location: number;
+    format?: GPUVertexFormat;
     
-    constructor(format: string){
-        this.format = format;
+    constructor(location: number){
+        this.location = location;
     }
 }

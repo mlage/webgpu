@@ -1,4 +1,4 @@
-import Camera from "./webgpu/camera";
+import Camera from "./camera";
 import Main from "./main";
 import Mesh from "./webgpu/mesh";
 import Program from "./webgpu/program";

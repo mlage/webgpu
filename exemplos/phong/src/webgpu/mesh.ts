@@ -2,14 +2,10 @@ import { mat4, vec3 } from "gl-matrix"
 import Pipeline from "./pipeline";
  
 export default class Mesh{
-    protected vertex: Float32Array;
-    private vertexBuffer: GPUBuffer;
+    protected device: GPUDevice;
 
-    private colors?: Float32Array;
-    private colorBuffer?: GPUBuffer;
-
-    private vertexPos: number;
-    private colorPos?: number;
+    protected arrays: Float32Array[] = [];
+    protected buffers: GPUBuffer[] = [];
 
     pos: vec3 = vec3.fromValues(0,0,0);
     scale: vec3 = vec3.fromValues(1,1,1);
@@ -24,26 +20,20 @@ export default class Mesh{
     }
 
     public get numberOfVertex(){
-        return this.vertex.length/this.stride;
+        return this.arrays[0].length/this.stride;
     }
 
-    constructor(device: GPUDevice, stride: number = 3, vertex: Float32Array, vertexPos: number, colors?:Float32Array, colorsPos?: number){
-        this.vertex = vertex;
-        this.vertexBuffer = Pipeline.createGPUBuffer(device, this.vertex);
-        this.vertexPos = vertexPos;
-
-        if(colors){
-            if(!colorsPos)
-                throw new Error("Color buffer position not provided.");
-
-            this.colors = colors;
-            this.colorBuffer = Pipeline.createGPUBuffer(device, this.colors);
-            this.colorPos = colorsPos;
-        }
-        
+    constructor(device: GPUDevice, stride: number = 3){
         this.model_matrix = mat4.create();
 
         this.stride = stride;
+
+        this.device = device;
+    }
+
+    appendBuffer(data: Float32Array){
+        this.arrays.push(data);
+        this.buffers.push(Pipeline.createGPUBuffer(this.device, data));
     }
 
     private createTransforms(){
@@ -68,9 +58,7 @@ export default class Mesh{
     }
 
     setBuffers(renderPass: GPURenderPassEncoder){
-        renderPass.setVertexBuffer(this.vertexPos, this.vertexBuffer);
-
-        if(this.colorBuffer) renderPass.setVertexBuffer(this.colorPos!, this.colorBuffer);
+        for(let i=0; i<this.buffers.length; i++) renderPass.setVertexBuffer(i, this.buffers[i]);
     }
 
 }
