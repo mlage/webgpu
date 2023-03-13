@@ -1,10 +1,10 @@
-import Light from "./light";
 import { Shaders } from "./shader";
-import Sphere from "./sphere";
+import { CubeData } from "./vertex_data";
 import Camera from "./camera";
-import IndexedMesh from "./webgpu/indexed_mesh";
+import Mesh from "./webgpu/mesh";
 import Pipeline from "./webgpu/pipeline";
 import Program from "./webgpu/program";
+import { mat4 } from "gl-matrix";
 
 export default class Main{
     device?: GPUDevice;
@@ -62,75 +62,45 @@ export default class Main{
 }
 
 Main.build().then((main)=>{
-    //criando a esfera
-    const data = new Sphere(1, [0,0,0]);
+    const cubeData = CubeData();
 
-    //criando malha e adicionando array de vértices e de normais
-    const sphere = new IndexedMesh(main.device!, data.indexes!);
-    sphere.appendBuffer(data.vertices!);
-    sphere.appendBuffer(IndexedMesh.calculateNormals(data.indexes!, data.vertices!, 6));
-
-    //aumentado esfera e criando shaders
-    sphere.scale = [2, 2, 2];
+    const cube = new Mesh(main.device!, 3);
+    cube.appendBuffer(cubeData.positions);
+    cube.appendBuffer(cubeData.colors);
     const shaders = Shaders();
 
-    //criando pipeline e acionando depth test
     const pipeline = new Pipeline(main.device!, shaders.vertex, shaders.fragment, "triangle-list");
     pipeline.enableDepthTest();
+    pipeline.addVertexBuffer({location: 0});
+    pipeline.addVertexBuffer({location: 1});
 
-    //adicionando ao pipeline a forma de ler os dados dos buffers de vértice
-    pipeline.addVertexBuffer({location: 0}, {location: 1});
-    pipeline.addVertexBuffer({location: 2, format: "float32x4"});
-
-    //instanciando a luz
-    const light = new Light([2, 2, -1, 1]);
-
-    //criando a camera
     const camera = new Camera(main.canvas!);
-    camera.camPosition = [0, 0, 4];
+    camera.projectionType = "orthogonal";
+    camera.camPosition = [2, 2, -6];
 
-    //criando o programa
-    const program = new Program(main.device!, pipeline, sphere);
+    const program = new Program(main.device!, pipeline, cube);
 
-    //enviando as matrizes
-    program.appendUniformBuffer(0, 0, 
-        new Float32Array(sphere.modelMatrix), 
-        new Float32Array(camera.viewMatrix),
-        new Float32Array(camera.projMatrix)
-    );
+    const mvp = mat4.create();
+    mat4.multiply(mvp, camera.getViewProjection(), cube.modelMatrix);
 
-    //enviando os parametros da camera
-    light.createUniformBuffer(program, 0, 1);
+    program.appendUniformBuffer(0, 0, new Float32Array(mvp));
 
-    //desenhando
     program.draw(main.context!, main.depthTexture);
 
     document.addEventListener("keypress", e=>{
-        if(e.key === "p" || e.key === "o"){
-            if (e.key == "p") camera.projectionType = "perspective";
-            else camera.projectionType = "orthogonal";
+        if (e.key == "p") {
+            camera.projectionType = "perspective";
+            mat4.multiply(mvp, camera.getViewProjection(), cube.modelMatrix);
 
-            program.appendUniformBuffer(0, 0, 
-                new Float32Array(sphere.modelMatrix), 
-                new Float32Array(camera.viewMatrix),
-                new Float32Array(camera.projMatrix)
-            );
+            program.appendUniformBuffer(0, 0, new Float32Array(mvp));
+            program.draw(main.context!, main.depthTexture);
+        } else if (e.key == "o") {
+            camera.projectionType = "orthogonal";
+            mat4.multiply(mvp, camera.getViewProjection(), cube.modelMatrix);
 
+            program.appendUniformBuffer(0, 0, new Float32Array(mvp));
             program.draw(main.context!, main.depthTexture);
         }
     })
-
-    let param = 0;
-
-    const draw = ()=>{
-        light.newPos(param);
-        light.createUniformBuffer(program, 0, 1);
-        program.draw(main.context!, main.depthTexture);
-        param+=0.01;
-        requestAnimationFrame(draw);
-    }
-
-    requestAnimationFrame(draw);
 })
-
 

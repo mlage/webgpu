@@ -5,6 +5,7 @@ import Camera from "./camera";
 import Mesh from "./webgpu/mesh";
 import Pipeline from "./webgpu/pipeline";
 import Program from "./webgpu/program";
+import { mat4 } from "gl-matrix";
 
 export default class Main{
     device?: GPUDevice;
@@ -67,28 +68,42 @@ export default class Main{
 Main.build().then((main)=>{
     const cubeData = CubeData();
 
-    const cube = new Mesh(main.device!, 3, new Float32Array(cubeData.positions), 0, 
-        new Float32Array(cubeData.colors), 1);
+    const cube = new Mesh(main.device!, 3);
+    cube.appendBuffer(cubeData.positions);
+    cube.appendBuffer(cubeData.colors);
     const shaders = Shaders();
 
     const pipeline = new Pipeline(main.device!, shaders.vertex, shaders.fragment, "triangle-list");
+    pipeline.enableDepthTest();
+    pipeline.addVertexBuffer({location: 0});
+    pipeline.addVertexBuffer({location: 1});
 
     const camera = new Camera(main.canvas!);
     camera.projectionType = "orthogonal";
     camera.camPosition = [2, 2, -6];
 
     const program = new Program(main.device!, pipeline, cube);
-    program.useMVPMatrix(0, 0);
 
-    program.draw(camera, main.context!, main.depthTexture);
+    const mvp = mat4.create();
+    mat4.multiply(mvp, camera.getViewProjection(), cube.modelMatrix);
+    
+    program.appendUniformBuffer(0, 0, new Float32Array(mvp));
+
+    program.draw(main.context!, main.depthTexture);
 
     document.addEventListener("keypress", e=>{
         if (e.key == "p") {
             camera.projectionType = "perspective";
-            program.draw(camera, main.context!, main.depthTexture);
+            mat4.multiply(mvp, camera.getViewProjection(), cube.modelMatrix);
+
+            program.appendUniformBuffer(0, 0, new Float32Array(mvp));
+            program.draw(main.context!, main.depthTexture);
         } else if (e.key == "o") {
             camera.projectionType = "orthogonal";
-            program.draw(camera, main.context!, main.depthTexture);
+            mat4.multiply(mvp, camera.getViewProjection(), cube.modelMatrix);
+
+            program.appendUniformBuffer(0, 0, new Float32Array(mvp));
+            program.draw(main.context!, main.depthTexture);
         }
     })
 })

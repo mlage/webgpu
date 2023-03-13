@@ -61,6 +61,10 @@ export default class Program{
         }))
     }
 
+    setTexture(){
+        
+    }
+
     private setBindGroups(renderPass: GPURenderPassEncoder){
         for(const entry of this.bindGroups.groups.entries()){
             renderPass.setBindGroup(Number(entry[0]), entry[1].group!);
