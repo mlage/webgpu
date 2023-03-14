@@ -1,4 +1,3 @@
-import Camera from "../camera";
 import IndexedMesh from "./indexed_mesh";
 import Mesh from "./mesh";
 import Pipeline from "./pipeline";
@@ -9,9 +8,6 @@ export default class Program{
 
     private uniforms: Uniform[] = [];
     private bindGroups: BindGroupsSet = new BindGroupsSet();
-
-    private using_mvp: boolean = false;
-    private mvpUniformBuffer?: GPUBuffer;
 
     device: GPUDevice;
 
@@ -46,13 +42,18 @@ export default class Program{
 
         size = blocks * max * 4;
 
-        //criando buffer
         const uniformBuffer = this.device.createBuffer({
             size,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         })
 
-        this.bindGroups.add(this.device, binding, group, size, uniformBuffer);
+        const resource = {
+            buffer: uniformBuffer,
+            offset: 0,
+            size
+        } as GPUBindingResource;
+
+        this.bindGroups.add(this.device, binding, group, resource);
 
         this.uniforms.push(new Uniform(uniformBuffer, data, max));
 
@@ -61,8 +62,41 @@ export default class Program{
         }))
     }
 
-    setTexture(){
-        
+    async setTexture(imgSrc: string, addressModeU:GPUAddressMode = "repeat", addressModeV:GPUAddressMode = "repeat"){
+        const img = document.createElement("img");
+        img.src = imgSrc;
+        img.setAttribute('crossOrigin', '');
+        await img.decode();
+        const imageBitmap = await createImageBitmap(img);
+
+        const sampler = this.device.createSampler({
+            minFilter: 'linear',
+            magFilter: 'linear',
+            addressModeU,
+            addressModeV
+        });       
+    
+        // create texture
+        const texture = this.device.createTexture({
+            size: [imageBitmap.width, imageBitmap.height, 1],
+            format: 'rgba8unorm',
+            usage: GPUTextureUsage.TEXTURE_BINDING | 
+                   GPUTextureUsage.COPY_DST | 
+                   GPUTextureUsage.RENDER_ATTACHMENT
+        });
+    
+        this.device.queue.copyExternalImageToTexture(
+            { source: imageBitmap },
+            { texture: texture },
+            [imageBitmap.width, imageBitmap.height]
+        );
+    
+        this.bindGroups.add(this.device, 0, 1, texture.createView());
+        this.bindGroups.add(this.device, 1, 1, sampler);
+
+        this.pipeline.setLayout(this.device.createPipelineLayout({
+            bindGroupLayouts: this.bindGroups.getLayouts()
+        }))
     }
 
     private setBindGroups(renderPass: GPURenderPassEncoder){
@@ -176,10 +210,10 @@ function maxLength(data: Float32Array[]){
 class BindGroupsSet{
     groups: Map<number, BindGroup> = new Map();
 
-    add(device: GPUDevice, binding: number, group: number, size: number, buffer: GPUBuffer){
+    add(device: GPUDevice, binding: number, group: number, resource: GPUBindingResource){
         if(!this.groups.get(group)) this.groups.set(group, new BindGroup());
 
-        this.groups.get(group)?.newEntry(device, binding, size, buffer);
+        this.groups.get(group)?.newEntry(device, binding, resource);
     }
 
     getLayouts(){
@@ -200,20 +234,14 @@ class BindGroup{
     layout?: GPUBindGroupLayout;
     group?: GPUBindGroup;
 
-    newEntry(device: GPUDevice, binding: number, size: number, buffer: GPUBuffer){
-        this.layoutEntries.set(binding, {
-            binding,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            buffer: {}
-        });
+    newEntry(device: GPUDevice, binding: number, resource: GPUBindingResource){
+        const layEntry = BindGroup.getLayoutEntry(resource);
+        layEntry.binding = binding;
+        this.layoutEntries.set(binding, layEntry);
         
         this.entries.set(binding, {
             binding: binding,
-            resource:{
-                buffer,
-                offset:0,
-                size
-            }
+            resource
         });
 
         this.layout = device.createBindGroupLayout({
@@ -224,5 +252,28 @@ class BindGroup{
             layout: this.layout,
             entries: this.entries.values()
         })
+    }
+
+    private static getLayoutEntry (resource:  GPUBindingResource): GPUBindGroupLayoutEntry{
+        if(resource instanceof GPUTextureView){
+            return {
+                binding: -1,
+                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                texture: {}
+            }
+        }
+        if(resource instanceof GPUSampler){
+            return {
+                binding: -1,
+                visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+                sampler: {}
+            }
+        }
+        
+        return {
+            binding: -1,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: {}
+        }    
     }
 }

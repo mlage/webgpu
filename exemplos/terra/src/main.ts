@@ -1,10 +1,10 @@
+import Light from "./light";
 import { Shaders } from "./shader";
-import { CubeData } from "./vertex_data";
+import Sphere from "./sphere";
 import Camera from "./camera";
-import Mesh from "./webgpu/mesh";
+import IndexedMesh from "./webgpu/indexed_mesh";
 import Pipeline from "./webgpu/pipeline";
 import Program from "./webgpu/program";
-import { mat4 } from "gl-matrix";
 
 export default class Main{
     device?: GPUDevice;
@@ -62,46 +62,82 @@ export default class Main{
 }
 
 Main.build().then(async (main)=>{
-    const cubeData = CubeData();
+    //criando a esfera
+    const data = new Sphere(1, [0,0,0]);
 
-    const cube = new Mesh(main.device!, 3);
-    cube.appendBuffer(cubeData.positions);
-    cube.appendBuffer(cubeData.tex);
+    //criando malha e adicionando array de vértices e de normais
+    const earth = new IndexedMesh(main.device!, data.indexes!);
+    earth.appendBuffer(data.vertices!);
+    earth.appendBuffer(IndexedMesh.calculateNormals(data.indexes!, data.vertices!, 5));
+
+    //criando shaders
     const shaders = Shaders();
 
+    //criando pipeline e acionando depth test
     const pipeline = new Pipeline(main.device!, shaders.vertex, shaders.fragment, "triangle-list");
     pipeline.enableDepthTest();
-    pipeline.addVertexBuffer({location: 0});
-    pipeline.addVertexBuffer({location: 1, format:"float32x2"});
 
+    //adicionando ao pipeline a forma de ler os dados dos buffers de vértice
+    pipeline.addVertexBuffer({location: 0}, {location: 1, format: "float32x2"});
+    pipeline.addVertexBuffer({location: 2, format: "float32x4"});
+
+    //instanciando a luz
+    const light = new Light([-4, 0, -2, 1]);
+
+    //criando a camera
     const camera = new Camera(main.canvas!);
-    camera.projectionType = "orthogonal";
-    camera.camPosition = [2, 2, -6];
+    camera.camPosition = [0, 0, 3];
 
-    const program = new Program(main.device!, pipeline, cube);
+    //criando o programa
+    const program = new Program(main.device!, pipeline, earth);
 
-    const mvp = mat4.create();
-    mat4.multiply(mvp, camera.getViewProjection(), cube.modelMatrix);
+    //enviando as matrizes
+    program.appendUniformBuffer(0, 0, 
+        new Float32Array(earth.modelMatrix), 
+        new Float32Array(camera.viewMatrix),
+        new Float32Array(camera.projMatrix)
+    );
 
-    program.appendUniformBuffer(0, 0, new Float32Array(mvp));
-    await program.setTexture("./assets/brick_1.png");
+    //enviando os parametros da camera
+    light.createUniformBuffer(program, 0, 1);
 
+
+    //setando a textura
+    await program.setTexture("./assets/earth.png")
+
+    //desenhando
     program.draw(main.context!, main.depthTexture);
 
     document.addEventListener("keypress", e=>{
-        if (e.key == "p") {
-            camera.projectionType = "perspective";
-            mat4.multiply(mvp, camera.getViewProjection(), cube.modelMatrix);
+        if(e.key === "p" || e.key === "o"){
+            if (e.key == "p") camera.projectionType = "perspective";
+            else camera.projectionType = "orthogonal";
 
-            program.appendUniformBuffer(0, 0, new Float32Array(mvp));
-            program.draw(main.context!, main.depthTexture);
-        } else if (e.key == "o") {
-            camera.projectionType = "orthogonal";
-            mat4.multiply(mvp, camera.getViewProjection(), cube.modelMatrix);
+            program.appendUniformBuffer(0, 0, 
+                new Float32Array(earth.modelMatrix), 
+                new Float32Array(camera.viewMatrix),
+                new Float32Array(camera.projMatrix)
+            );
 
-            program.appendUniformBuffer(0, 0, new Float32Array(mvp));
             program.draw(main.context!, main.depthTexture);
         }
     })
+
+    let param = 0;
+
+    const draw = ()=>{
+        earth.rotationAngles[1] = param;
+        program.appendUniformBuffer(0, 0, 
+            new Float32Array(earth.modelMatrix), 
+            new Float32Array(camera.viewMatrix),
+            new Float32Array(camera.projMatrix)
+        );
+        program.draw(main.context!, main.depthTexture);
+        param+=0.01;
+        requestAnimationFrame(draw);
+    }
+
+    requestAnimationFrame(draw);
 })
+
 
