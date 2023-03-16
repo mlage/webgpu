@@ -1,4 +1,0 @@
-Mudanças no código:
-
-1. As informações de cor e de vértice foram colocadas num único buffer,
-foi criado um buffer de índices e estes foram carregados.

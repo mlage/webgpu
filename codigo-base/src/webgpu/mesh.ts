@@ -61,4 +61,47 @@ export default class Mesh{
         for(let i=0; i<this.buffers.length; i++) renderPass.setVertexBuffer(i, this.buffers[i]);
     }
 
+    static calculateTriangleNormals(vertices:Float32Array, vertLen: number = 3, offset: number = 0){
+        const normals = new Array(vertices.length / vertLen * 4).fill(0);
+
+        for(let i = 0; i<vertices.length/vertLen; i+=3){
+            const tI1 = i
+            const tI2 = i+1;
+            const tI3 = i+2;
+
+            const p1 = vec3.fromValues(
+                vertices[tI1*vertLen + offset ],
+                vertices[tI1*vertLen + offset +1],
+                vertices[tI1*vertLen + offset +2]
+            );
+
+            const p2 = vec3.fromValues(
+                vertices[tI2*vertLen + offset ],
+                vertices[tI2*vertLen + offset +1],
+                vertices[tI2*vertLen + offset +2]
+            );
+
+            const p3 = vec3.fromValues(
+                vertices[tI3*vertLen + offset ],
+                vertices[tI3*vertLen + offset +1],
+                vertices[tI3*vertLen + offset +2]
+            );
+
+            const normal = Mesh.crossProduct(
+                vec3.fromValues(p2[0]-p1[0], p2[1] - p1[1], p2[2] - p1[2]),
+                vec3.fromValues(p3[0]-p1[0], p3[1] - p1[1], p3[2] - p1[2])
+            )
+
+            normals.push(...normal, ...normal, ...normal);
+        }
+        return new Float32Array(normals);
+    }
+
+    protected static crossProduct(v1: vec3, v2: vec3){
+        return vec3.fromValues(
+            v1[1]*v2[2] - v1[2]*v2[1],
+            v1[2]*v2[0] - v1[0]*v2[2],
+            v1[0]*v2[1] - v1[1]*v2[0]
+        );
+    }
 }

@@ -50,7 +50,7 @@ export default class IndexedMesh extends Mesh{
                 vertices[tI3*vertLen + offset +2]
             );
 
-            const normal = crossProduct(
+            const normal = Mesh.crossProduct(
                 vec3.fromValues(p2[0]-p1[0], p2[1] - p1[1], p2[2] - p1[2]),
                 vec3.fromValues(p3[0]-p1[0], p3[1] - p1[1], p3[2] - p1[2])
             )
@@ -69,12 +69,4 @@ export default class IndexedMesh extends Mesh{
         }
         return new Float32Array(normals);
     }
-}
-
-function crossProduct(v1: vec3, v2: vec3){
-    return vec3.fromValues(
-        v1[1]*v2[2] - v1[2]*v2[1],
-        v1[2]*v2[0] - v1[0]*v2[2],
-        v1[0]*v2[1] - v1[1]*v2[0]
-    );
 }
